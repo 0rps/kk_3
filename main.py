@@ -62,6 +62,9 @@ class Rule():
     def at(self, index):
         return self.__body[index]
 
+    def __repr__(self):
+        return '{0}->{1}'.format(self.head(), reduce(lambda x, y: '{0} {1}'.format(x, y), self.body(), ''))
+
 
 class Gramma():
     def __init__(self, nts, ts, rules, start):
@@ -137,22 +140,22 @@ def chainAnalysis(gramma, m, chain, i, j, A):
     if j == 1:
         char = chain[i - 1]
         for rule in gramma.rules():
-            if rule.head() == A and rule.isFinal() and rule.at(0).char() == char:
-                print rule
+            if rule.head() == A and rule.isFinal() and rule.at(0) == char:
+                print str(Rule(rule.head(), [char]))
                 return
 
         print 'ERROR'
         return
 
-    (rule, k) = findRule(gramma, m, i, j, A)
+    rule1, k = findRule(gramma, m, i, j, A)
 
-    if rule is None:
+    if rule1 is None:
         return
 
-    print rule
+    print str(rule1)
 
-    chainAnalysis(i, k, rule.at(0))
-    chainAnalysis(i + k, j - k, rule.at(1))
+    chainAnalysis(gramma, m, chain, i, k, rule1.at(0))
+    chainAnalysis(gramma, m, chain, i + k, j - k, rule1.at(1))
 
 
 def CYK(gramma, instr):
@@ -168,8 +171,11 @@ def CYK(gramma, instr):
     for i in range(1, n + 1):
         res[i][1] = gramma.findNonterminalsForTerminal(instr[i - 1])
 
-    for i in range(2, n + 1):
-        for j in range(1, n - i + 1):
+    for j in range(2, n+1):
+        for i in range(1, n+1):
+            if j > n - i + 1:
+                continue
+
             res[i][j] = getCombinationList(gramma.rules(), i, j, res)
 
     return res
@@ -178,8 +184,8 @@ def CYK(gramma, instr):
 raw_nonterms = ['S', 'S0', 'S1', 'A', 'A1', 'T', 'T1', 'F', 'I', 'V', 'F0', 'F1', 'F2', 'C', 'S', 'M']
 raw_terms = ['<', '<=', '=', '<>', '>', '>=', '+', '-', '*', '/', 'r^[0-9]+$', 'r^[a-z]+$', '(', ')']
 raw_rules = [
-    'S->S1 A|A1 T|T1 F|r^[0-9]+$|r^[a-z]+$|F0 F1',
-    'S1->A C',
+    'S->A S1|A1 T|T1 F|r^[0-9]+$|r^[a-z]+$|F0 F1',
+    'S1->C A',
     'C-><|<=|=|<>|>|>=',
     'A->A1 T|T1 F|r^[0-9]+$|r^[a-z]+$|F0 F1',
     'A1->A S0',
